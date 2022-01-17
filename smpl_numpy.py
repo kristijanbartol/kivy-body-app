@@ -12,7 +12,19 @@ class SMPLModel():
     `preprocess.py`.
     """
     with open(model_path, 'rb') as f:
-      params = pickle.load(f)
+      params = pickle.load(f, encoding='latin1')
+
+      #params['shapedirs'] = np.array(params['shapedirs'])
+      #with open('updated_smpl_model.pkl', 'wb') as handle:
+      #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+      #params['J_regressor'] = params['J_regressor'].toarray()
+      #with open('updated_smpl_model.pkl', 'wb') as handle:
+      #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+      #params['J_regressor_prior'] = params['J_regressor_prior'].toarray()
+      #with open('updated_smpl_model.pkl', 'wb') as handle:
+      #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
       self.J_regressor = params['J_regressor']
       self.weights = params['weights']
@@ -179,6 +191,16 @@ class SMPLModel():
         fp.write('v %f %f %f\n' % (v[0], v[1], v[2]))
       for f in self.faces + 1:
         fp.write('f %d %d %d\n' % (f[0], f[1], f[2]))
+
+  def __str__(self):
+    s = ''
+    for v in self.verts:
+      s += 'v %f %f %f\n@' % (v[0], v[1], v[2])
+    for f_idx, f in enumerate(self.faces + 1):
+      s += 'f %d//%d %d//%d %d//%d' % (f[0], f[0], f[1], f[1], f[2], f[2])
+      if f_idx + 1 != len(self.faces):
+        s += '\n@'
+    return s
 
 
 

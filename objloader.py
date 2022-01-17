@@ -75,7 +75,7 @@ class ObjFile:
         # mesh.calculate_normals()
         self.faces = []
 
-    def __init__(self, filename, swapyz=False):
+    def __init__(self, resource, mode='str', swapyz=False):
         """Loads a Wavefront OBJ file. """
         self.objects = {}
         self.vertices = []
@@ -86,7 +86,12 @@ class ObjFile:
         self._current_object = None
 
         material = None
-        for line in open(filename, "r"):
+        if mode == 'str':
+            lines = resource.split('\n')
+        else:
+            lines = open(resource, 'r').readlines()
+
+        for line in lines:
             if line.startswith('#'):
                 continue
             if line.startswith('s'):
@@ -149,5 +154,3 @@ def MTL(filename):
         mtl[values[0]] = values[1:]
     return contents
 
-
-mesh_obj = ''

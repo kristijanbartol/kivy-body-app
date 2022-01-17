@@ -13,10 +13,10 @@ package.domain = org.test
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,glsl,obj
+source.include_exts = py,png,jpg,kv,atlas,glsl,obj,pkl
 
 # (list) List of inclusions using pattern matching
-source.include_patterns = assets/*,images/*.png,*.obj,*.glsl
+source.include_patterns = assets/*,images/*.png,*.obj,*.glsl,*.pkl
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,numpy,certifi
+requirements = python3,kivy,numpy,certifi,trimesh
 #requirements = python3,sqlite3,openssl,kivy,numpy,torch,certifi,pyjnius
 
 # (str) Custom source folders for requirements
@@ -190,7 +190,7 @@ android.minapi = 21
 #android.add_assets =
 
 # (list) Gradle dependencies to add
-android.gradle_dependencies = "org.pytorch:pytorch_android_lite:1.10.0"
+#android.gradle_dependencies = "org.pytorch:pytorch_android_lite:1.10.0"
 #,"org.pytorch:pytorch_android_torchvision:0.11.1"
 
 # (bool) Enable AndroidX support. Enable when 'android.gradle_dependencies'
@@ -269,8 +269,8 @@ android.enableJetifier=true
 #android.copy_libs = 1
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-#android.arch = armeabi-v7a
-android.arch = arm64-v8a
+android.arch = armeabi-v7a
+#android.arch = arm64-v8a
 #android.arch = x86_64
 #android.arch = x86
 
@@ -332,7 +332,9 @@ p4a.bootstrap = sdl2
 #p4a.setup_py = false
 
 # (str) extra command line arguments to pass when invoking pythonforandroid.toolchain
-#p4a.extra_args =
+#p4a.extra_args = 
+#p4a.extra_args = aarch64-linux-android-gfortran
+
 
 
 #

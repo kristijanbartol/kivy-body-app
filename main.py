@@ -28,8 +28,10 @@ from kivy import kivy_data_dir
 import kivy
 from os.path import join, dirname, exists, abspath
 import sys
-import os
-import numpy
+import numpy as np
+import trimesh
+
+from smpl_numpy import SMPLModel
 
 
 resource_paths = ['.', dirname(sys.argv[0])]
@@ -56,20 +58,34 @@ def resource_find(filename):
 class Renderer(Widget):
     def __init__(self, **kwargs):
         self.canvas = RenderContext(compute_normal_mat=True)
-        #kivy_examples_folder = '../../../share/kivy-examples/'
-        kivy_examples_folder = './kivy_venv/share/'
-        Logger.info(f'currentdir: {os.getcwd()}')
-        Logger.info(f'listdir: {os.listdir(os.getcwd())}')
-        Logger.info(f'sharelistdir: {os.listdir(kivy_examples_folder)}')
-        #Logger.info(f'downloads: {os.listdir(os.getcwd())}')
-        for path in reversed(resource_paths):
-            Logger.info(f'defaultpaths: {path}')
-            #Logger.info(f'defaultlistdir: {os.listdir(path)}')
         self.canvas.shader.source = resource_find('simple.glsl')
-        mesh_resource = resource_find("template.obj")
-        #mesh_resource = 'template.obj'
-        Logger.info(f'mestrovic: {mesh_resource}')
-        self.scene = ObjFile(mesh_resource)
+        #mesh_resource = resource_find("template.obj")
+
+        #smpl_model_resource = resource_find('SMPL_MALE.pkl')
+        smpl_model_resource = resource_find('updated_smpl_model.pkl')
+
+        
+        smpl = SMPLModel(smpl_model_resource)
+        np.random.seed(9608)
+        pose = (np.random.rand(*smpl.pose_shape) - 0.5) * 0.4
+        beta = (np.random.rand(*smpl.beta_shape) - 0.5) * 0.06
+        trans = np.zeros(smpl.trans_shape)
+        smpl.set_params(beta=beta, pose=pose, trans=trans)
+
+        vertices = smpl.verts.squeeze()
+        faces = smpl.faces.squeeze()
+
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
+        #mesh.vertex_normals     # trigger @property method to calculate vertex normals
+        vertex_normals = trimesh.geometry.weighted_vertex_normals(
+            vertex_count=len(mesh.vertices),
+            faces=mesh.faces,
+            face_normals=mesh.face_normals,
+            face_angles=mesh.face_angles)
+        setattr(mesh, 'vertex_normals', vertex_normals)
+
+        #self.scene = ObjFile(mesh_resource, mode='filename')
+        self.scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
         super(Renderer, self).__init__(**kwargs)
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
@@ -100,6 +116,7 @@ class Renderer(Widget):
         self.rot = Rotate(1, 0, 1, 0)
         m = list(self.scene.objects.values())[0]
         UpdateNormalMatrix()
+
         self.mesh = Mesh(
             vertices=m.vertices,
             indices=m.indices,
