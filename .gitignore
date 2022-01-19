@@ -7,4 +7,5 @@ kivy_env/
 *.obj
 *.pkl
 *.zip
+*.npy
 my_log.txt

@@ -1,0 +1,63 @@
+<RootWidget>:
+
+    ScreenManager:
+        id: sm
+
+        Screen:
+            name: 'in_screen'
+            id: in_screen
+
+            GridLayout:
+                rows: 3
+
+                TextInput:
+                    id: height_text
+                    text:
+                TextInput:
+                    id: weight_text
+                    text:
+                RenderButton:
+                    text: 'Render'
+                    on_release:
+                        sm.current = 'measurements_screen'
+
+        RenderScreen:
+            name: 'render_screen'
+            id: render_screen
+
+        Screen:
+            name: 'measurements_screen'
+            id: measurements_screen
+
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    id: meas1
+                Label:
+                    id: meas2
+                Label:
+                    id: meas3
+                Label:
+                    id: meas4
+                Label:
+                    id: meas5
+                Label:
+                    id: meas6
+                Label:
+                    id: meas7
+                Label:
+                    id: meas8
+                Label:
+                    id: meas9
+                Label:
+                    id: meas10
+                Label:
+                    id: meas11
+                Label:
+                    id: meas12
+                Label:
+                    id: meas13
+                Label:
+                    id: meas14
+                Label:
+                    id: meas15
