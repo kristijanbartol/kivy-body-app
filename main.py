@@ -1,4 +1,3 @@
-from tkinter import Label
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.properties import ListProperty
@@ -14,6 +13,7 @@ from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
     Color, Translate, Rotate, Mesh, UpdateNormalMatrix
 from objloader import ObjFile
 
+import pickle
 import numpy as np
 import trimesh
 
@@ -144,14 +144,23 @@ class RootWidget(Screen):
 
 class RendererApp(App):
     
-    male_coefs_baseline = ListProperty(list(np.load('male_meas_coefs.npy').swapaxes(0, 1)))
-    female_coefs_baseline = ListProperty(list(np.load('female_meas_coefs.npy').swapaxes(0, 1)))
+    with open(resource_find('coefs.pkl'), 'rb') as handle:
+        _coefs = pickle.load(handle)
     
-    male_coefs_shape = ListProperty(list(np.load('male_shape_coefs.npy').swapaxes(0, 1)))
-    female_coefs_shape = ListProperty(list(np.load('female_shape_coefs.npy').swapaxes(0, 1)))
+    male_coefs_baseline = ListProperty(list(
+        _coefs['male_meas_coefs'].swapaxes(0, 1)))
+    female_coefs_baseline = ListProperty(list(
+        _coefs['female_meas_coefs'].swapaxes(0, 1)))
     
-    male_coefs_meas_to_shae = ListProperty(list(np.load('male_meas_to_shape_coefs.npy').swapaxes(0, 1)))
-    female_coefs_meas_to_shae = ListProperty(list(np.load('female_meas_to_shape_coefs.npy').swapaxes(0, 1)))
+    male_coefs_shape = ListProperty(list(
+        _coefs['male_shape_coefs'].swapaxes(0, 1)))
+    female_coefs_shape = ListProperty(list(
+        _coefs['female_shape_coefs'].swapaxes(0, 1)))
+    
+    male_coefs_meas_to_shae = ListProperty(list(
+        _coefs['male_meas_to_shape_coefs'].swapaxes(0, 1)))
+    female_coefs_meas_to_shae = ListProperty(list(
+        _coefs['female_meas_to_shape_coefs'].swapaxes(0, 1)))
     
     measurements = ListProperty([0.] * 15)
     betas = ListProperty([0.] * 10)
