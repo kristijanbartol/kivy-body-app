@@ -1,6 +1,7 @@
 from tkinter import Label
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
@@ -52,9 +53,9 @@ class RenderScreen(Screen):
         smpl = SMPLModel(smpl_model_resource)
         np.random.seed(9608)
         pose = np.zeros(shape=smpl.pose_shape)
-        beta = (np.random.rand(*smpl.beta_shape) - 0.5) * 0.06
+        #beta = (np.random.rand(*smpl.beta_shape) - 0.5) * 0.06
         trans = np.zeros(smpl.trans_shape)
-        smpl.set_params(beta=beta, pose=pose, trans=trans)
+        smpl.set_params(beta=app.betas, pose=pose, trans=trans)
 
         vertices = smpl.verts.squeeze()
         faces = smpl.faces.squeeze()
@@ -116,7 +117,7 @@ class RenderButton(Button):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             self._calculate_measurements()
-            app.root.ids.sm.current = 'measurements_screen'
+            app.root.ids.sm.current = 'render_screen'
     
     @staticmethod
     def _calculate_measurements():
@@ -124,28 +125,40 @@ class RenderButton(Button):
             height = float(app.root.ids.height_text.text)
             weight = float(app.root.ids.weight_text.text)
             
-            measurements = np.array([height, weight, 1.]) @ app.male_coefs.swapaxes(0, 1) * 100.
+            app.measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
+            app.betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
             
-            for midx, mvalue in enumerate(measurements):
+            for midx, mvalue in enumerate(app.measurements):
                 app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
+                
+            #for bidx in range(10):
+            #    app.root.betas[bidx] = 
         except ValueError:
             pass
         
 
 class RootWidget(Screen):
+    
     pass
 
 
 class RendererApp(App):
     
+    male_coefs_baseline = ListProperty(list(np.load('male_meas_coefs.npy').swapaxes(0, 1)))
+    female_coefs_baseline = ListProperty(list(np.load('female_meas_coefs.npy').swapaxes(0, 1)))
+    
+    male_coefs_shape = ListProperty(list(np.load('male_shape_coefs.npy').swapaxes(0, 1)))
+    female_coefs_shape = ListProperty(list(np.load('female_shape_coefs.npy').swapaxes(0, 1)))
+    
+    male_coefs_meas_to_shae = ListProperty(list(np.load('male_meas_to_shape_coefs.npy').swapaxes(0, 1)))
+    female_coefs_meas_to_shae = ListProperty(list(np.load('female_meas_to_shape_coefs.npy').swapaxes(0, 1)))
+    
+    measurements = ListProperty([0.] * 15)
+    betas = ListProperty([0.] * 10)
+    
     def build(self):
-        self._prepare()
         self.root = RootWidget()
         return self.root
-    
-    def _prepare(self):
-        self.male_coefs = np.load('male_meas_coefs.npy')
-        #self.measurements = ['0.0cm'] * 15
 
 
 if __name__ == "__main__":
