@@ -39,6 +39,13 @@ MEASUREMENT_NAMES = [
 ]
 
 
+class MeasurementsScreen(Screen):
+    
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            app.root.ids.sm.current = 'in_screen'
+
+
 class RenderScreen(Screen):
     
     def __init__(self, **kwargs):
@@ -111,6 +118,10 @@ class RenderScreen(Screen):
         )
         PopMatrix()
         
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            app.root.ids.sm.current = 'measurements_screen'
+        
         
 class RenderButton(Button):
     
@@ -127,6 +138,8 @@ class RenderButton(Button):
             
             app.measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
             app.betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
+            
+            # TODO: Need to update measurements and betas as ListProperties.
             
             for midx, mvalue in enumerate(app.measurements):
                 app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
