@@ -45,7 +45,7 @@ requirements = python3,kivy,numpy,certifi,trimesh
 # requirements.source.kivy = ../../kivy
 
 # (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = %(source.dir)s/logo_transparent.png
 
 # (str) Icon of the application
 #icon.filename = %(source.dir)s/data/icon.png

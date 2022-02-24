@@ -4,6 +4,7 @@ from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
@@ -17,6 +18,9 @@ import numpy as np
 import trimesh
 
 from smpl_numpy import SMPLModel
+
+
+Window.size = (360, 600)
 
 
 MEASUREMENT_NAMES = [
@@ -123,6 +127,20 @@ class RenderScreen(Screen):
         Logger.info('renderscreen resumed')  
         self.update_mesh_callback.ask_update()
         
+        
+class HeightInput(TextInput):
+    
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            app.root.ids['height_text'].text = ''
+        
+
+class WeightInput(TextInput):
+    
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            app.root.ids['weight_text'].text = ''
+
         
 class RenderButton(Button):
     

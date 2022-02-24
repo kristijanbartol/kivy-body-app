@@ -7,15 +7,22 @@
             name: 'in_screen'
             id: in_screen
 
-            GridLayout:
-                rows: 3
+            BoxLayout:
+                orientation: 'vertical'
+                spacing: 8
+                padding: 60
 
-                TextInput:
+                Image:
+                    source: 'logo_transparent_cropped.png'
+                HeightInput:
                     id: height_text
-                    text:
-                TextInput:
+                    text: 'Enter height [m]...'
+                    #on_touch_down: height_text.text = ''
+                WeightInput:
                     id: weight_text
-                    text:
+                    text: 'Enter body weight [kg]...'
+                    #on_touch_down: weight_text.text = ''
+
                 RenderButton:
                     text: 'Render'
 
