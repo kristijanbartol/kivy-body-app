@@ -1,5 +1,7 @@
+from tkinter import Label
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivy.uix.widget import Widget
@@ -21,21 +23,21 @@ from smpl_numpy import SMPLModel
 
 
 MEASUREMENT_NAMES = [
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J',
-    'K',
-    'L',
-    'M',
-    'N',
-    'O'
+    ('A', 'Head circumference'),
+    ('B', 'Neck circumference'),
+    ('C', 'Shoulder to crotch'),
+    ('D', 'Chest circumference'),
+    ('E', 'Waist circumference'),
+    ('F', 'Hip circumference'),
+    ('G', 'Wrist circumference'),
+    ('H', 'Bicep circumference'),
+    ('I', 'Forearm circumference'),
+    ('J', 'Arm length'),
+    ('K', 'Inside leg length'),
+    ('L', 'Thigh circumference'),
+    ('M', 'Calf circumference'),
+    ('N', 'Ankle circumference'),
+    ('O', 'Shoulder breadth')
 ]
 
 
@@ -53,30 +55,6 @@ class RenderScreen(Screen):
         
         self.canvas = RenderContext(compute_normal_mat=True)
         self.canvas.shader.source = resource_find('simple.glsl')
-        
-        smpl_model_resource = resource_find('updated_smpl_model.pkl')
-
-        
-        smpl = SMPLModel(smpl_model_resource)
-        np.random.seed(9608)
-        pose = np.zeros(shape=smpl.pose_shape)
-        #beta = (np.random.rand(*smpl.beta_shape) - 0.5) * 0.06
-        trans = np.zeros(smpl.trans_shape)
-        smpl.set_params(beta=app.betas, pose=pose, trans=trans)
-
-        vertices = smpl.verts.squeeze()
-        faces = smpl.faces.squeeze()
-
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
-
-        vertex_normals = trimesh.geometry.weighted_vertex_normals(
-            vertex_count=len(mesh.vertices),
-            faces=mesh.faces,
-            face_normals=mesh.face_normals,
-            face_angles=mesh.face_angles)
-        setattr(mesh, 'vertex_normals', vertex_normals)
-        
-        self.scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
         
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
@@ -101,26 +79,53 @@ class RenderScreen(Screen):
         self.canvas['diffuse_light'] = (1.0, 1.0, 0.8)
         self.canvas['ambient_light'] = (0.1, 0.1, 0.1)
         self.rot.angle += delta * 100
+        
+    def update_mesh(self, *args):
+        self.mesh.vertices = app.vertices
 
     def setup_scene(self):
         Color(1, 1, 1, 1)
         PushMatrix()
         Translate(0, 0, -3)
         self.rot = Rotate(1, 0, 1, 0)
-        m = list(self.scene.objects.values())[0]
         UpdateNormalMatrix()
+        
+        beta = (np.random.rand(*app.smpl.beta_shape) - 0.5) * 0.06
+        app.smpl.set_params(beta=beta, pose=app.pose, trans=app.trans)
 
+        vertices = app.smpl.verts.squeeze()
+        faces = app.smpl.faces.squeeze()
+
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
+
+        vertex_normals = trimesh.geometry.weighted_vertex_normals(
+            vertex_count=len(mesh.vertices),
+            faces=mesh.faces,
+            face_normals=mesh.face_normals,
+            face_angles=mesh.face_angles)
+        setattr(mesh, 'vertex_normals', vertex_normals)
+        
+        scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
+        m = list(scene.objects.values())[0]
+        
         self.mesh = Mesh(
-            vertices=m.vertices,
+            #vertices=m.vertices,
+            vertices=app.vertices,
             indices=m.indices,
             fmt=m.vertex_format,
             mode='triangles',
         )
+        
+        self.update_mesh_callback = Callback(self.update_mesh, needs_redraw=True)
         PopMatrix()
         
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             app.root.ids.sm.current = 'measurements_screen'
+            
+    def on_enter(self):
+        Logger.info('renderscreen resumed')  
+        self.update_mesh_callback.ask_update()
         
         
 class RenderButton(Button):
@@ -128,7 +133,29 @@ class RenderButton(Button):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             self._calculate_measurements()
+            self._calculate_vertices()
             app.root.ids.sm.current = 'render_screen'
+            
+    @staticmethod
+    def _calculate_vertices():
+        app.smpl.set_params(beta=app.betas, pose=app.pose, trans=app.trans)
+
+        vertices = app.smpl.verts.squeeze()
+        faces = app.smpl.faces.squeeze()
+
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
+
+        vertex_normals = trimesh.geometry.weighted_vertex_normals(
+            vertex_count=len(mesh.vertices),
+            faces=mesh.faces,
+            face_normals=mesh.face_normals,
+            face_angles=mesh.face_angles)
+        setattr(mesh, 'vertex_normals', vertex_normals)
+        
+        scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
+        m = list(scene.objects.values())[0]
+        
+        app.vertices = m.vertices
     
     @staticmethod
     def _calculate_measurements():
@@ -136,16 +163,16 @@ class RenderButton(Button):
             height = float(app.root.ids.height_text.text)
             weight = float(app.root.ids.weight_text.text)
             
-            app.measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
-            app.betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
+            measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
+            betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
             
-            # TODO: Need to update measurements and betas as ListProperties.
+            app.measurements = list(measurements)
+            for i in range(10):
+                app.betas[i] = betas[i]
             
             for midx, mvalue in enumerate(app.measurements):
                 app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
-                
-            #for bidx in range(10):
-            #    app.root.betas[bidx] = 
+
         except ValueError:
             pass
         
@@ -153,6 +180,7 @@ class RenderButton(Button):
 class RootWidget(Screen):
     
     pass
+        
 
 
 class RendererApp(App):
@@ -176,7 +204,15 @@ class RendererApp(App):
         _coefs['female_meas_to_shape_coefs'].swapaxes(0, 1)))
     
     measurements = ListProperty([0.] * 15)
+    vertices = ListProperty([0.] * 330624)
     betas = ListProperty([0.] * 10)
+    
+    smpl_model_resource = resource_find('updated_smpl_model.pkl')
+        
+    smpl = SMPLModel(smpl_model_resource)
+    np.random.seed(9608)
+    pose = np.zeros(shape=smpl.pose_shape)
+    trans = np.zeros(smpl.trans_shape)
     
     def build(self):
         self.root = RootWidget()
