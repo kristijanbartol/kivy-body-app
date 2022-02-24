@@ -1,13 +1,10 @@
-from tkinter import Label
-from kivy.app import App
+from kivymd.app import MDApp
 from kivy.clock import Clock
 from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
-from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
 from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
@@ -109,7 +106,6 @@ class RenderScreen(Screen):
         m = list(scene.objects.values())[0]
         
         self.mesh = Mesh(
-            #vertices=m.vertices,
             vertices=app.vertices,
             indices=m.indices,
             fmt=m.vertex_format,
@@ -183,7 +179,7 @@ class RootWidget(Screen):
         
 
 
-class RendererApp(App):
+class RendererApp(MDApp):
     
     with open(resource_find('coefs.pkl'), 'rb') as handle:
         _coefs = pickle.load(handle)
@@ -215,6 +211,7 @@ class RendererApp(App):
     trans = np.zeros(smpl.trans_shape)
     
     def build(self):
+        self.theme_cls.theme_style = "Dark"  # "Light"
         self.root = RootWidget()
         return self.root
 
