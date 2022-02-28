@@ -5,6 +5,7 @@ from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from kivymd.uix.button import MDFillRoundFlatButton
 from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
@@ -126,29 +127,49 @@ class RenderScreen(Screen):
     def on_enter(self):
         Logger.info('renderscreen resumed')  
         self.update_mesh_callback.ask_update()
-        
-        
-class HeightInput(TextInput):
-    
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            app.root.ids['height_text'].text = ''
-        
-
-class WeightInput(TextInput):
-    
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            app.root.ids['weight_text'].text = ''
 
         
-class RenderButton(Button):
+class RenderButton(MDFillRoundFlatButton):
     
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            self._calculate_measurements()
-            self._calculate_vertices()
-            app.root.ids.sm.current = 'render_screen'
+            inputs = self._check_inputs()
+            if inputs is not None:
+                self._calculate_measurements(*inputs)
+                self._calculate_vertices()
+                app.root.ids.sm.current = 'render_screen'
+            
+    @staticmethod
+    def _check_inputs():
+        def _check_height(height_text):
+            if not (len(height_text) == 4 and height_text[0].isdigit() and height_text[1] == '.' and \
+                height_text[2].isdigit() and height_text[3].isdigit()):
+                app.root.ids.height_text.error = True
+                return False
+            return float(height_text)
+            
+        def _check_weight(weight_text):
+            if not (len(weight_text) > 0 and all([weight_text[x] for x in range(len(weight_text))])):
+                app.root.ids.weight_text.error = True
+                return False
+            return float(weight_text)
+            
+        height = _check_height(app.root.ids.height_text.text)
+        weight = _check_weight(app.root.ids.weight_text.text)
+        
+        return (height, weight) if (height and weight) else None
+    
+    @staticmethod
+    def _calculate_measurements(height, weight):
+        measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
+        betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
+        
+        app.measurements = list(measurements)
+        for i in range(10):
+            app.betas[i] = betas[i]
+        
+        for midx, mvalue in enumerate(app.measurements):
+            app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
             
     @staticmethod
     def _calculate_vertices():
@@ -170,25 +191,6 @@ class RenderButton(Button):
         m = list(scene.objects.values())[0]
         
         app.vertices = m.vertices
-    
-    @staticmethod
-    def _calculate_measurements():
-        try:
-            height = float(app.root.ids.height_text.text)
-            weight = float(app.root.ids.weight_text.text)
-            
-            measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
-            betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
-            
-            app.measurements = list(measurements)
-            for i in range(10):
-                app.betas[i] = betas[i]
-            
-            for midx, mvalue in enumerate(app.measurements):
-                app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
-
-        except ValueError:
-            pass
         
 
 class RootWidget(Screen):

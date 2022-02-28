@@ -14,14 +14,16 @@
 
                 Image:
                     source: 'logo_transparent_cropped.png'
-                HeightInput:
+                MDTextField:
                     id: height_text
-                    text: 'Enter height [m]...'
-                    #on_touch_down: height_text.text = ''
-                WeightInput:
+                    hint_text: 'Enter height [m]...'
+                    helper_text: 'Height should be in format x.yy'
+                    helper_text_mode: 'on_error'
+                MDTextField:
                     id: weight_text
-                    text: 'Enter body weight [kg]...'
-                    #on_touch_down: weight_text.text = ''
+                    hint_text: 'Enter body weight [kg]...'
+                    helper_text: 'Weight should be rounded to a full kilogram'
+                    helper_text_mode: 'on_error'
 
                 RenderButton:
                     text: 'Render'
