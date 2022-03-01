@@ -44,10 +44,14 @@ MEASUREMENT_NAMES = [
 
 
 class MeasurementsScreen(Screen):
-    
-    def on_touch_up(self, touch):
-        if self.collide_point(*touch.pos):
+            
+    def on_touch_move(self, touch):
+        if touch.x < touch.ox:
+            app.root.ids.sm.transition.direction = 'left'
             app.root.ids.sm.current = 'in_screen'
+        if touch.x > touch.ox:
+            app.root.ids.sm.transition.direction = 'right'
+            app.root.ids.sm.current = 'render_screen'
 
 
 class RenderScreen(Screen):
@@ -119,10 +123,14 @@ class RenderScreen(Screen):
         
         self.update_mesh_callback = Callback(self.update_mesh, needs_redraw=True)
         PopMatrix()
-        
-    def on_touch_up(self, touch):
-        if self.collide_point(*touch.pos):
+
+    def on_touch_move(self, touch):
+        if touch.x < touch.ox:
+            app.root.ids.sm.transition.direction = 'left'
             app.root.ids.sm.current = 'measurements_screen'
+        if touch.x > touch.ox:
+            app.root.ids.sm.transition.direction = 'right'
+            app.root.ids.sm.current = 'in_screen'
             
     def on_enter(self):
         Logger.info('renderscreen resumed')  
@@ -137,6 +145,7 @@ class RenderButton(MDFillRoundFlatButton):
             if inputs is not None:
                 self._calculate_measurements(*inputs)
                 self._calculate_vertices()
+                app.root.ids.sm.transition.direction = 'left'
                 app.root.ids.sm.current = 'render_screen'
             
     @staticmethod

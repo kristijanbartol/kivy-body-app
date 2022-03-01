@@ -1,3 +1,8 @@
+<Check@MDCheckbox>:
+    group: 'group'
+    size_hint: None, None
+    size: dp(48), dp(48)
+
 <RootWidget>:
 
     ScreenManager:
@@ -14,6 +19,11 @@
 
                 Image:
                     source: 'logo_transparent_cropped.png'
+                #Check:
+                #    active: True
+                #    pos_hint: {'center_x': .4, 'center_y': .5}
+                #Check:
+                #    pos_hint: {'center_x': .6, 'center_y': .5}
                 MDTextField:
                     id: height_text
                     hint_text: 'Enter height [m]...'
@@ -27,6 +37,7 @@
 
                 RenderButton:
                     text: 'Render'
+                    pos_hint: {'center_x': .5, 'center_y': .5}
 
         RenderScreen:
             name: 'render_screen'
