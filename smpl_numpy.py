@@ -15,24 +15,20 @@ class SMPLModel():
       params = pickle.load(f, encoding='latin1')
 
       #params['shapedirs'] = np.array(params['shapedirs'])
-      #with open('updated_smpl_model.pkl', 'wb') as handle:
-      #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
       #params['J_regressor'] = params['J_regressor'].toarray()
-      #with open('updated_smpl_model.pkl', 'wb') as handle:
-      #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
       #params['J_regressor_prior'] = params['J_regressor_prior'].toarray()
       #with open('updated_smpl_model.pkl', 'wb') as handle:
       #  pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-      self.J_regressor = params['J_regressor']
-      self.weights = params['weights']
-      self.posedirs = params['posedirs']
-      self.v_template = params['v_template']
-      self.shapedirs = params['shapedirs']
-      self.faces = params['f']
-      self.kintree_table = params['kintree_table']
+    self.J_regressor = params['J_regressor']
+    self.weights = params['weights']
+    self.posedirs = params['posedirs']
+    self.v_template = params['v_template']
+    self.shapedirs = params['shapedirs']
+    self.faces = params['f']
+    self.kintree_table = params['kintree_table']
 
     id_to_col = {
       self.kintree_table[1, i]: i for i in range(self.kintree_table.shape[1])

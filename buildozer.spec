@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,numpy,certifi,trimesh
+requirements = python3,kivy,kivymd,Pillow,numpy,certifi,trimesh
 #requirements = python3,sqlite3,openssl,kivy,numpy,torch,certifi,pyjnius
 
 # (str) Custom source folders for requirements

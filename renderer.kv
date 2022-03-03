@@ -3,6 +3,7 @@
     size_hint: None, None
     size: dp(48), dp(48)
 
+
 <RootWidget>:
 
     ScreenManager:
@@ -14,30 +15,53 @@
 
             BoxLayout:
                 orientation: 'vertical'
-                spacing: 8
-                padding: 60
+                spacing: 5
+                padding: 10
 
                 Image:
                     source: 'logo_transparent_cropped.png'
-                #Check:
-                #    active: True
-                #    pos_hint: {'center_x': .4, 'center_y': .5}
-                #Check:
-                #    pos_hint: {'center_x': .6, 'center_y': .5}
+                    size_hint_x: 0.5
+                    size_hint_y: 0.5
+                    pos_hint: {'center_x': .5, 'center_y': .5}
+
+                MDSpinner:
+                    id: spinner
+                    size_hint: None, None
+                    size: dp(35), dp(35)
+                    active: False
+                    pos_hint: {'center_x': .5, 'center_y': .5}
+        
                 MDTextField:
                     id: height_text
                     hint_text: 'Enter height [m]...'
                     helper_text: 'Height should be in format x.yy'
                     helper_text_mode: 'on_error'
+                    on_text: root.verify_height(self, self.text)
                 MDTextField:
                     id: weight_text
                     hint_text: 'Enter body weight [kg]...'
-                    helper_text: 'Weight should be rounded to a full kilogram'
+                    helper_text: 'Weight should be in range 40-200kg and rounded to a full kilogram'
                     helper_text_mode: 'on_error'
-
+                    on_text: root.verify_weight(self, self.text)
                 RenderButton:
+                    id: render_button
                     text: 'Render'
                     pos_hint: {'center_x': .5, 'center_y': .5}
+
+                BoxLayout:
+                    MDLabel:
+                        text: 'Male'
+                        pos_hint: {'center_x': .0, 'center_y': .9}
+                    Check:
+                        id: male_check
+                        active: True
+                        pos_hint: {'center_x': .2, 'center_y': .9}
+                    MDLabel:
+                        text: 'Female'
+                        pos_hint: {'center_x': .5, 'center_y': .9}
+                    Check:
+                        id: female_check
+                        pos_hint: {'center_x': .7, 'center_y': .9}
 
         RenderScreen:
             name: 'render_screen'

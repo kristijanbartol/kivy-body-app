@@ -1,10 +1,10 @@
 from kivymd.app import MDApp
+#from kivy.app import App
 from kivy.clock import Clock
 from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivy.uix.button import Button
-from kivy.uix.textinput import TextInput
 from kivymd.uix.button import MDFillRoundFlatButton
 from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
@@ -13,6 +13,7 @@ from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
     Color, Translate, Rotate, Mesh, UpdateNormalMatrix
 from objloader import ObjFile
+import sys
 
 import pickle
 import numpy as np
@@ -21,7 +22,7 @@ import trimesh
 from smpl_numpy import SMPLModel
 
 
-Window.size = (360, 600)
+#Window.size = (360, 600)
 
 
 MEASUREMENT_NAMES = [
@@ -44,7 +45,7 @@ MEASUREMENT_NAMES = [
 
 
 class MeasurementsScreen(Screen):
-            
+       
     def on_touch_move(self, touch):
         if touch.x < touch.ox:
             app.root.ids.sm.transition.direction = 'left'
@@ -70,7 +71,6 @@ class RenderScreen(Screen):
             self.cb = Callback(self.reset_gl_context)
         
         Clock.schedule_interval(self.update_glsl, 1 / 60.)
-        
 
     def setup_gl_context(self, *args):
         glEnable(GL_DEPTH_TEST)
@@ -96,11 +96,12 @@ class RenderScreen(Screen):
         self.rot = Rotate(1, 0, 1, 0)
         UpdateNormalMatrix()
         
-        beta = (np.random.rand(*app.smpl.beta_shape) - 0.5) * 0.06
-        app.smpl.set_params(beta=beta, pose=app.pose, trans=app.trans)
+        beta = (np.random.rand(*app.smpl_model['male'].beta_shape) - 0.5) * 0.06
+        app.smpl_model['male'].set_params(beta=beta, pose=app.pose, trans=app.trans)
+        app.smpl_model['female'].set_params(beta=beta, pose=app.pose, trans=app.trans)
 
-        vertices = app.smpl.verts.squeeze()
-        faces = app.smpl.faces.squeeze()
+        vertices = app.smpl_model['male'].verts.squeeze()
+        faces = app.smpl_model['male'].faces.squeeze()
 
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
 
@@ -133,45 +134,55 @@ class RenderScreen(Screen):
             app.root.ids.sm.current = 'in_screen'
             
     def on_enter(self):
-        Logger.info('renderscreen resumed')  
+        #app.root.ids['spinner'].active = False
         self.update_mesh_callback.ask_update()
 
         
 class RenderButton(MDFillRoundFlatButton):
+
     
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             inputs = self._check_inputs()
             if inputs is not None:
+                app.root.ids['spinner'].active = True
                 self._calculate_measurements(*inputs)
-                self._calculate_vertices()
+                self._calculate_vertices(inputs[2])
                 app.root.ids.sm.transition.direction = 'left'
                 app.root.ids.sm.current = 'render_screen'
-            
-    @staticmethod
-    def _check_inputs():
+                
+    def _check_inputs(self):
         def _check_height(height_text):
             if not (len(height_text) == 4 and height_text[0].isdigit() and height_text[1] == '.' and \
                 height_text[2].isdigit() and height_text[3].isdigit()):
-                app.root.ids.height_text.error = True
+                #app.root.ids.height_text.error = True
+                #app.root.ids.height_text.bind(text=self.verify)
                 return False
+            
+            app.root.ids.height_text.error = False
             return float(height_text)
             
         def _check_weight(weight_text):
             if not (len(weight_text) > 0 and all([weight_text[x] for x in range(len(weight_text))])):
                 app.root.ids.weight_text.error = True
                 return False
+            
+            app.root.ids.weight_text.error = False
             return float(weight_text)
+        
+        gender = 'male' if app.root.ids['male_check'].active else 'female'
             
         height = _check_height(app.root.ids.height_text.text)
         weight = _check_weight(app.root.ids.weight_text.text)
         
-        return (height, weight) if (height and weight) else None
+        return (height, weight, gender) if (height and weight) else None
     
     @staticmethod
-    def _calculate_measurements(height, weight):
-        measurements = np.array([height, weight, 1.]) @ app.male_coefs_baseline * 100.
-        betas = np.array([height, weight, 1.]) @ app.male_coefs_shape
+    def _calculate_measurements(height, weight, gender):
+        coefs_baseline = app.coefs_baseline_dict[gender]
+        coefs_shape = app.coefs_shape[gender]
+        measurements = np.array([height, weight, 1.]) @ coefs_baseline * 100.
+        betas = np.array([height, weight, 1.]) @ coefs_shape
         
         app.measurements = list(measurements)
         for i in range(10):
@@ -181,11 +192,11 @@ class RenderButton(MDFillRoundFlatButton):
             app.root.ids[f'meas{midx+1}'].text = f'{MEASUREMENT_NAMES[midx]}: {mvalue:.2f}cm'
             
     @staticmethod
-    def _calculate_vertices():
-        app.smpl.set_params(beta=app.betas, pose=app.pose, trans=app.trans)
+    def _calculate_vertices(gender):
+        app.smpl_model[gender].set_params(beta=app.betas, pose=app.pose, trans=app.trans)
 
-        vertices = app.smpl.verts.squeeze()
-        faces = app.smpl.faces.squeeze()
+        vertices = app.smpl_model[gender].verts.squeeze()
+        faces = app.smpl_model[gender].faces.squeeze()
 
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
 
@@ -204,19 +215,48 @@ class RenderButton(MDFillRoundFlatButton):
 
 class RootWidget(Screen):
     
-    pass
-        
+    def verify_height(self, instance, text):
+        if len(text) != 4 or (len(text) == 4 and not all([
+                text[0].isdigit(),
+                text[1] == '.',
+                text[2].isdigit(),
+                text[3].isdigit()])):
+            instance.error = True
+        else:
+            instance.error = False
+            
+    def verify_weight(self, instance, text):
+        if len(text) > 0 and all([x.isdigit() for x in text]) and (int(text) < 40 or int(text) > 200):
+            instance.error = True
+        elif all([x.isdigit() for x in text]):
+            instance.error = False
+        else: 
+            instance.error = True
+            
+    #def test(self, instance):
+    #    print('tested')
 
 
 class RendererApp(MDApp):
     
+    
     with open(resource_find('coefs.pkl'), 'rb') as handle:
         _coefs = pickle.load(handle)
+        
+    coefs_baseline_dict = {
+        'male': _coefs['male_meas_coefs'].swapaxes(0, 1),
+        'female': _coefs['female_meas_coefs'].swapaxes(0, 1)
+    }
     
     male_coefs_baseline = ListProperty(list(
         _coefs['male_meas_coefs'].swapaxes(0, 1)))
     female_coefs_baseline = ListProperty(list(
         _coefs['female_meas_coefs'].swapaxes(0, 1)))
+    
+    coefs_shape = {
+        'male': _coefs['male_shape_coefs'].swapaxes(0, 1),
+        'female': _coefs['female_shape_coefs'].swapaxes(0, 1)
+    }
     
     male_coefs_shape = ListProperty(list(
         _coefs['male_shape_coefs'].swapaxes(0, 1)))
@@ -232,16 +272,24 @@ class RendererApp(MDApp):
     vertices = ListProperty([0.] * 330624)
     betas = ListProperty([0.] * 10)
     
-    smpl_model_resource = resource_find('updated_smpl_model.pkl')
-        
-    smpl = SMPLModel(smpl_model_resource)
+    smpl_model_male_path = resource_find('PY3_SMPL_MALE.pkl')
+    smpl_model_female_path = resource_find('PY3_SMPL_FEMALE.pkl')
+    
+    smpl_model = {    
+        'male': SMPLModel(smpl_model_male_path),
+        'female': SMPLModel(smpl_model_female_path)
+    }
     np.random.seed(9608)
-    pose = np.zeros(shape=smpl.pose_shape)
-    trans = np.zeros(smpl.trans_shape)
+    pose = np.zeros(shape=smpl_model['male'].pose_shape)
+    trans = np.zeros(smpl_model['male'].trans_shape)
     
     def build(self):
         self.theme_cls.theme_style = "Dark"  # "Light"
         self.root = RootWidget()
+        
+        #self.root.ids.height_text.bind(on_focus=self.root.test)
+        #self.root.ids.weight_text.bind(text=self.root.verify_weight)
+        
         return self.root
 
 
