@@ -1,10 +1,8 @@
 from kivymd.app import MDApp
-#from kivy.app import App
 from kivy.clock import Clock
 from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
-from kivy.uix.button import Button
 from kivymd.uix.button import MDFillRoundFlatButton
 from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
@@ -13,7 +11,7 @@ from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
     Color, Translate, Rotate, Mesh, UpdateNormalMatrix
 from objloader import ObjFile
-import sys
+from functools import partial
 
 import pickle
 import numpy as np
@@ -134,28 +132,50 @@ class RenderScreen(Screen):
             app.root.ids.sm.current = 'in_screen'
             
     def on_enter(self):
-        #app.root.ids['spinner'].active = False
+        app.root.ids.render_button.text = 'Render'
         self.update_mesh_callback.ask_update()
 
         
 class RenderButton(MDFillRoundFlatButton):
 
+    class _TriggerFuncArgs():
+        
+        def __init__(self):
+            self.height = 1.80
+            self.weight = 80
+            self.gender = 'female'
+
+    def __init__(self, **kwargs):
+        super(RenderButton, self).__init__(**kwargs)
+        
+        self._args = self._TriggerFuncArgs()
+        self._calc_trigger = Clock.create_trigger(partial(self._calculate_all, self._args), timeout=0)
     
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             inputs = self._check_inputs()
             if inputs is not None:
-                app.root.ids['spinner'].active = True
-                self._calculate_measurements(*inputs)
-                self._calculate_vertices(inputs[2])
-                app.root.ids.sm.transition.direction = 'left'
-                app.root.ids.sm.current = 'render_screen'
+                app.root.ids.render_button.text = 'Rendering...'
                 
+                self._args.height = inputs[0]
+                self._args.weight = inputs[1]
+                self._args.gender = inputs[2]
+                
+                self._calc_trigger()
+                
+    @staticmethod
+    def _calculate_all(args, dt):
+        RenderButton._calculate_measurements(args.height, args.weight, args.gender)
+        RenderButton._calculate_vertices(args.gender)
+        
+        app.root.ids.sm.transition.direction = 'left'
+        app.root.ids.sm.current = 'render_screen'
+        
     def _check_inputs(self):
         def _check_height(height_text):
             if not (len(height_text) == 4 and height_text[0].isdigit() and height_text[1] == '.' and \
                 height_text[2].isdigit() and height_text[3].isdigit()):
-                #app.root.ids.height_text.error = True
+                app.root.ids.height_text.error = True
                 #app.root.ids.height_text.bind(text=self.verify)
                 return False
             
@@ -215,7 +235,10 @@ class RenderButton(MDFillRoundFlatButton):
 
 class RootWidget(Screen):
     
+    # TODO: Do not even allow typing non-digit (filtering, kivy documentation).
+    
     def verify_height(self, instance, text):
+        #Logger.log('verifying height...')
         if len(text) != 4 or (len(text) == 4 and not all([
                 text[0].isdigit(),
                 text[1] == '.',
@@ -232,9 +255,6 @@ class RootWidget(Screen):
             instance.error = False
         else: 
             instance.error = True
-            
-    #def test(self, instance):
-    #    print('tested')
 
 
 class RendererApp(MDApp):
@@ -286,9 +306,6 @@ class RendererApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"  # "Light"
         self.root = RootWidget()
-        
-        #self.root.ids.height_text.bind(on_focus=self.root.test)
-        #self.root.ids.weight_text.bind(text=self.root.verify_weight)
         
         return self.root
 
