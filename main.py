@@ -63,6 +63,8 @@ class RenderScreen(Screen):
         self.canvas = RenderContext(compute_normal_mat=True)
         self.canvas.shader.source = resource_find('simple.glsl')
         
+        #Clock.schedule_once(self._prepare, 0)
+        
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
             PushMatrix()
@@ -71,6 +73,16 @@ class RenderScreen(Screen):
             self.cb = Callback(self.reset_gl_context)
         
         Clock.schedule_interval(self.update_glsl, 1 / 60.)
+        
+    '''
+    def _prepare(self, dt):
+        with self.canvas:
+            self.cb = Callback(self.setup_gl_context)
+            PushMatrix()
+            self.setup_scene()
+            PopMatrix()
+            self.cb = Callback(self.reset_gl_context)
+    '''
 
     def setup_gl_context(self, *args):
         glEnable(GL_DEPTH_TEST)
@@ -96,29 +108,15 @@ class RenderScreen(Screen):
         self.rot = Rotate(1, 0, 1, 0)
         UpdateNormalMatrix()
         
-        beta = (np.random.rand(*app.smpl_model['male'].beta_shape) - 0.5) * 0.06
-        app.smpl_model['male'].set_params(beta=beta, pose=app.pose, trans=app.trans)
-        app.smpl_model['female'].set_params(beta=beta, pose=app.pose, trans=app.trans)
-
-        vertices = app.smpl_model['male'].verts.squeeze()
-        faces = app.smpl_model['male'].faces.squeeze()
-
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
-
-        vertex_normals = trimesh.geometry.weighted_vertex_normals(
-            vertex_count=len(mesh.vertices),
-            faces=mesh.faces,
-            face_normals=mesh.face_normals,
-            face_angles=mesh.face_angles)
-        setattr(mesh, 'vertex_normals', vertex_normals)
-        
-        scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
-        m = list(scene.objects.values())[0]
+        vertex_format = [
+            (b'v_pos', 3, 'float'),
+            (b'v_normal', 3, 'float'),
+            (b'v_tc0', 2, 'float')]
         
         self.mesh = Mesh(
             vertices=app.vertices,
-            indices=m.indices,
-            fmt=m.vertex_format,
+            indices=list(range(41328)),
+            fmt=vertex_format,
             mode='triangles',
         )
         
@@ -233,8 +231,7 @@ class RenderButton(MDFillRoundFlatButton):
         m = list(scene.objects.values())[0]
         
         app.vertices = m.vertices
-        
-        
+                
 
 class FilteredTextField(MDTextField):
     
