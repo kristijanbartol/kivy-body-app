@@ -254,8 +254,6 @@ class FilteredTextField(MDTextField):
 
 class RootWidget(Screen):
     
-    # TODO: Do not even allow typing non-digit (filtering, kivy documentation).
-    
     def verify_height(self, instance, text):
         if len(text) != 4 or (len(text) == 4 and not all([
                 text[0].isdigit(),
