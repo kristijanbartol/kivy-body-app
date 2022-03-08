@@ -63,18 +63,10 @@ class RenderScreen(Screen):
         self.canvas = RenderContext(compute_normal_mat=True)
         self.canvas.shader.source = resource_find('simple.glsl')
         
-        #Clock.schedule_once(self._prepare, 0)
-        
-        with self.canvas:
-            self.cb = Callback(self.setup_gl_context)
-            PushMatrix()
-            self.setup_scene()
-            PopMatrix()
-            self.cb = Callback(self.reset_gl_context)
-        
+        Clock.schedule_once(self._prepare, 0.1)
+        self.rot = Rotate(1, 0, 1, 0)
         Clock.schedule_interval(self.update_glsl, 1 / 60.)
         
-    '''
     def _prepare(self, dt):
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
@@ -82,7 +74,6 @@ class RenderScreen(Screen):
             self.setup_scene()
             PopMatrix()
             self.cb = Callback(self.reset_gl_context)
-    '''
 
     def setup_gl_context(self, *args):
         glEnable(GL_DEPTH_TEST)
@@ -176,7 +167,6 @@ class RenderButton(MDFillRoundFlatButton):
             if not (len(height_text) == 4 and height_text[0].isdigit() and height_text[1] == '.' and \
                 height_text[2].isdigit() and height_text[3].isdigit()):
                 app.root.ids.height_text.error = True
-                #app.root.ids.height_text.bind(text=self.verify)
                 return False
             
             app.root.ids.height_text.error = False
@@ -281,36 +271,18 @@ class RendererApp(MDApp):
         'female': _coefs['female_meas_coefs'].swapaxes(0, 1)
     }
     
-    male_coefs_baseline = ListProperty(list(
-        _coefs['male_meas_coefs'].swapaxes(0, 1)))
-    female_coefs_baseline = ListProperty(list(
-        _coefs['female_meas_coefs'].swapaxes(0, 1)))
-    
     coefs_shape = {
         'male': _coefs['male_shape_coefs'].swapaxes(0, 1),
         'female': _coefs['female_shape_coefs'].swapaxes(0, 1)
     }
     
-    male_coefs_shape = ListProperty(list(
-        _coefs['male_shape_coefs'].swapaxes(0, 1)))
-    female_coefs_shape = ListProperty(list(
-        _coefs['female_shape_coefs'].swapaxes(0, 1)))
-    
-    male_coefs_meas_to_shae = ListProperty(list(
-        _coefs['male_meas_to_shape_coefs'].swapaxes(0, 1)))
-    female_coefs_meas_to_shae = ListProperty(list(
-        _coefs['female_meas_to_shape_coefs'].swapaxes(0, 1)))
-    
     measurements = ListProperty([0.] * 15)
     vertices = ListProperty([0.] * 330624)
     betas = ListProperty([0.] * 10)
     
-    smpl_model_male_path = resource_find('PY3_SMPL_MALE.pkl')
-    smpl_model_female_path = resource_find('PY3_SMPL_FEMALE.pkl')
-    
     smpl_model = {    
-        'male': SMPLModel(smpl_model_male_path),
-        'female': SMPLModel(smpl_model_female_path)
+        'male': SMPLModel(resource_find('PY3_SMPL_MALE.pkl')),
+        'female': SMPLModel(resource_find('PY3_SMPL_FEMALE.pkl'))
     }
     np.random.seed(9608)
     pose = np.zeros(shape=smpl_model['male'].pose_shape)
