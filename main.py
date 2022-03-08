@@ -47,10 +47,10 @@ MEASUREMENT_NAMES = [
 class MeasurementsScreen(Screen):
        
     def on_touch_move(self, touch):
-        if touch.x < touch.ox:
+        if touch.x - touch.ox < -10:
             app.root.ids.sm.transition.direction = 'left'
             app.root.ids.sm.current = 'in_screen'
-        if touch.x > touch.ox:
+        if touch.x - touch.ox > 10:
             app.root.ids.sm.transition.direction = 'right'
             app.root.ids.sm.current = 'render_screen'
 
@@ -115,16 +115,28 @@ class RenderScreen(Screen):
         PopMatrix()
 
     def on_touch_move(self, touch):
-        if touch.x < touch.ox:
+        if touch.x - touch.ox < -10:
             app.root.ids.sm.transition.direction = 'left'
             app.root.ids.sm.current = 'measurements_screen'
-        if touch.x > touch.ox:
+        if touch.x - touch.ox > 10:
             app.root.ids.sm.transition.direction = 'right'
             app.root.ids.sm.current = 'in_screen'
             
     def on_enter(self):
         app.root.ids.render_button.text = 'Render'
         self.update_mesh_callback.ask_update()
+        
+        
+class InputScreen(Screen):
+    
+    def on_touch_move(self, touch):
+        if app.root.rendered:
+            if touch.x - touch.ox < -10:
+                app.root.ids.sm.transition.direction = 'left'
+                app.root.ids.sm.current = 'render_screen'
+            if touch.x - touch.ox > 10:
+                app.root.ids.sm.transition.direction = 'right'
+                app.root.ids.sm.current = 'measurements_screen'
 
         
 class RenderButton(MDFillRoundFlatButton):
@@ -153,6 +165,7 @@ class RenderButton(MDFillRoundFlatButton):
                 self._args.gender = inputs[2]
                 
                 self._calc_trigger()
+                app.root.rendered = True
                 
     @staticmethod
     def _calculate_all(args, dt):
@@ -240,6 +253,8 @@ class FilteredTextField(MDTextField):
     
 
 class RootWidget(Screen):
+    
+    rendered = False
     
     def verify_height(self, instance, text):
         if len(text) != 4 or (len(text) == 4 and not all([
