@@ -13,10 +13,10 @@ package.domain = org.test
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,glsl,obj,pkl
+source.include_exts = py,png,jpg,kv,atlas,glsl,obj,pkl,ttf
 
 # (list) List of inclusions using pattern matching
-source.include_patterns = assets/*,images/*.png,*.obj,*.glsl,*.pkl
+source.include_patterns = assets/*,images/*.png,*.obj,*.glsl,*.pkl,*.ttf
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,kivymd,Pillow,numpy,certifi,trimesh
+requirements = python3,kivy,Pillow,numpy,certifi,trimesh
 #requirements = python3,sqlite3,openssl,kivy,numpy,torch,certifi,pyjnius
 
 # (str) Custom source folders for requirements

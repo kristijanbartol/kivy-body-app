@@ -31,13 +31,13 @@
                 #    active: False
                 #    pos_hint: {'center_x': .5, 'center_y': .5}
 
-                MDTextField:
+                FilteredTextField:
                     id: height_text
                     hint_text: 'Enter height [m]...'
                     helper_text: 'Height should be in format x.yy'
                     helper_text_mode: 'on_error'
                     on_text: root.verify_height(self, self.text)
-                MDTextField:
+                FilteredTextField:
                     id: weight_text
                     hint_text: 'Enter body weight [kg]...'
                     helper_text: 'Weight should be in range 40-200kg and rounded to a full kilogram'

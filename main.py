@@ -4,6 +4,7 @@ from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
 from kivymd.uix.button import MDFillRoundFlatButton
+from kivymd.uix.textfield import MDTextField
 from kivy.uix.screenmanager import Screen
 from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
@@ -13,6 +14,7 @@ from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
 from objloader import ObjFile
 from functools import partial
 
+import re
 import pickle
 import numpy as np
 import trimesh
@@ -232,29 +234,45 @@ class RenderButton(MDFillRoundFlatButton):
         
         app.vertices = m.vertices
         
+        
+
+class FilteredTextField(MDTextField):
+    
+    pat = re.compile('[^0-9]')
+    
+    def insert_text(self, substring, from_undo=False):
+        pat = self.pat
+        if '.' in self.text:
+            s = re.sub(pat, '', substring)
+        else:
+            s = '.'.join(
+                re.sub(pat, '', s)
+                for s in substring.split('.', 1)
+            )
+        return super().insert_text(s, from_undo=from_undo)
+    
 
 class RootWidget(Screen):
     
     # TODO: Do not even allow typing non-digit (filtering, kivy documentation).
     
     def verify_height(self, instance, text):
-        #Logger.log('verifying height...')
         if len(text) != 4 or (len(text) == 4 and not all([
                 text[0].isdigit(),
                 text[1] == '.',
                 text[2].isdigit(),
                 text[3].isdigit()])):
-            instance.error = True
+            instance.on_error(instance, True)
         else:
-            instance.error = False
+            instance.on_error(instance, False)
             
     def verify_weight(self, instance, text):
         if len(text) > 0 and all([x.isdigit() for x in text]) and (int(text) < 40 or int(text) > 200):
-            instance.error = True
+            instance.on_error(instance, True)
         elif all([x.isdigit() for x in text]):
-            instance.error = False
+            instance.on_error(instance, False)
         else: 
-            instance.error = True
+            instance.on_error(instance, True)
 
 
 class RendererApp(MDApp):
