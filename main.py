@@ -3,6 +3,7 @@ from kivy.clock import Clock
 from kivy.logger import Logger
 from kivy.properties import ListProperty
 from kivy.core.window import Window
+from kivy.core.image import Image
 from kivymd.uix.button import MDFillRoundFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivy.uix.screenmanager import Screen
@@ -10,7 +11,7 @@ from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
 from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
-    Color, Translate, Rotate, Mesh, UpdateNormalMatrix
+    Color, Translate, Rotate, Mesh, UpdateNormalMatrix, ChangeState
 from objloader import ObjFile
 from functools import partial
 
@@ -71,6 +72,7 @@ class RenderScreen(Screen):
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
             PushMatrix()
+            
             self.setup_scene()
             PopMatrix()
             self.cb = Callback(self.reset_gl_context)
@@ -87,15 +89,18 @@ class RenderScreen(Screen):
         self.canvas['projection_mat'] = proj
         self.canvas['diffuse_light'] = (1.0, 1.0, 0.8)
         self.canvas['ambient_light'] = (0.1, 0.1, 0.1)
+        
         self.rot.angle += delta * 100
         
     def update_mesh(self, *args):
-        self.mesh.vertices = app.vertices
+        self.mesh1.vertices = app.vertices
+        self.mesh3.vertices = app.faces_data
 
     def setup_scene(self):
         Color(1, 1, 1, 1)
         PushMatrix()
-        Translate(0, 0, -3)
+        #Translate(0, 0, -3)
+        Translate(0, 0, -1.5)
         self.rot = Rotate(1, 0, 1, 0)
         UpdateNormalMatrix()
         
@@ -104,13 +109,24 @@ class RenderScreen(Screen):
             (b'v_normal', 3, 'float'),
             (b'v_tc0', 2, 'float')]
         
-        self.mesh = Mesh(
-            vertices=app.vertices,
+        texture = Image('bricks.png').texture
+        
+        # NOTE: Indices should actually be of the expected size.
+        self.mesh3 = Mesh(
+             vertices=[],
+             indices=list(range(495)),
+             fmt=vertex_format,
+             mode='triangles',
+             texture=texture)
+        
+        # NOTE: Indices should actually be of the expected size.
+        self.mesh1 = Mesh(
+            vertices=[],
             indices=list(range(41328)),
             fmt=vertex_format,
-            mode='triangles',
+            mode='triangles'
         )
-        
+
         self.update_mesh_callback = Callback(self.update_mesh, needs_redraw=True)
         PopMatrix()
 
@@ -204,7 +220,7 @@ class RenderButton(MDFillRoundFlatButton):
     def _calculate_measurements(height, weight, gender):
         coefs_baseline = app.coefs_baseline_dict[gender]
         coefs_shape = app.coefs_shape[gender]
-        measurements = np.array([height, weight, 1.]) @ coefs_baseline * 100.
+        measurements = np.array([height, weight, weight / height ** 2, weight * height, 1.]) @ coefs_baseline * 100.
         betas = np.array([height, weight, 1.]) @ coefs_shape
         
         app.measurements = list(measurements)
@@ -221,7 +237,7 @@ class RenderButton(MDFillRoundFlatButton):
         vertices = app.smpl_model[gender].verts.squeeze()
         faces = app.smpl_model[gender].faces.squeeze()
 
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_colors=np.tile([.7, .7, .7], (6890, 1)))
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)   # process=False bites again!!!!!
 
         vertex_normals = trimesh.geometry.weighted_vertex_normals(
             vertex_count=len(mesh.vertices),
@@ -230,10 +246,19 @@ class RenderButton(MDFillRoundFlatButton):
             face_angles=mesh.face_angles)
         setattr(mesh, 'vertex_normals', vertex_normals)
         
-        scene = ObjFile(trimesh.exchange.export.export_obj(mesh))
+        mesh_obj = trimesh.exchange.export.export_obj(mesh)
+        scene = ObjFile(mesh_obj)
         m = list(scene.objects.values())[0]
         
         app.vertices = m.vertices
+        waist_mesh_indices_sublists = m.smpl_to_mesh_vertex_map.values()
+        
+        waist_indices = []
+        for index_sublist in waist_mesh_indices_sublists:
+            waist_indices += index_sublist
+        
+        app.waist_mesh_indices = waist_indices
+        app.faces_data = m.smpl_faces_data
                 
 
 class FilteredTextField(MDTextField):
@@ -293,7 +318,12 @@ class RendererApp(MDApp):
     
     measurements = ListProperty([0.] * 15)
     vertices = ListProperty([0.] * 330624)
+    smpl_vertices = np.zeros((6890, 3), dtype=np.float32).flatten()
+    smpl_faces = np.zeros((13776, 3), dtype=np.float32).flatten()
     betas = ListProperty([0.] * 10)
+    
+    waist_mesh_indices = ListProperty([0])
+    faces_data = ListProperty([0.] * 330624)
     
     smpl_model = {    
         'male': SMPLModel(resource_find('PY3_SMPL_MALE.pkl')),

@@ -1,6 +1,18 @@
 from kivy.logger import Logger
 
 
+# NOTE: The indices were wrong (in the Sensors implementation)!!!!!!! (6376->4376, 6375->4375)
+WAIST_INDICES = [3500, 1336, 917, 916, 919, 918, 665, 662, 657, 654, 631, 632, 720, 799, 796, 890, 889, 3124, 3018, \
+        3019, 3502, 6473, 6474, 6545, 4376, 4375, 4284, 4285, 4208, 4120, 4121, 4142, 4143, 4150, 4151, 4406, 4405, \
+        4403, 4402, 4812]
+
+CHEST_INDICES = (3076, 2870, 1254, 1255, 1349, 1351, 3033, 3030, 3037, 3034, 3039, 611, 2868, 2864, 2866, 1760, 1419, 741, \
+        738, 759, 2957, 2907, 1435, 1436, 1437, 1252, 1235, 749, 752, 3015, 4238, 4718, 4735, 4908, 4909, 6366, 4252, 4251, \
+        4224, 4133, 4132, 4896, 5230, 4683, 4682, 4089, 4101, 6485, 6481, 6482, 6477, 6478, 4828, 4825, 4740, 4737, 6332)
+
+
+
+
 class MeshData(object):
     def __init__(self, **kwargs):
         self.name = kwargs.get("name")
@@ -10,6 +22,31 @@ class MeshData(object):
             (b'v_tc0', 2, 'float')]
         self.vertices = []
         self.indices = []
+        self.smpl_to_mesh_vertex_map = {}
+        self.smpl_faces_data = []
+        
+        '''
+        # Default basic material of mesh object
+        self.diffuse_color = (1.0, 1.0, 1.0)
+        self.ambient_color = (1.0, 1.0, 1.0)
+        self.specular_color = (1.0, 1.0, 1.0)
+        self.specular_coefficent = 16.0
+        self.transparency = 1.0
+        '''
+        
+    '''
+    def set_materials(self, mtl_dict):
+        self.diffuse_color = mtl_dict.get('Kd') or self.diffuse_color
+        self.diffuse_color = [float(v) for v in self.diffuse_color]
+        self.ambient_color = mtl_dict.get('Ka') or self.ambient_color
+        self.ambient_color = [float(v) for v in self.ambient_color]
+        self.specular_color = mtl_dict.get('Ks') or self.specular_color
+        self.specular_color = [float(v) for v in self.specular_color]
+        self.specular_coefficent = float(mtl_dict.get('Ns', self.specular_coefficent))
+        transparency = mtl_dict.get('d')
+        if not transparency: 
+            transparency = 1.0 - float(mtl_dict.get('Tr', 0))
+        self.transparency = float(transparency)
 
     def calculate_normals(self):
         for i in range(len(self.indices) / (3)):
@@ -37,6 +74,7 @@ class MeshData(object):
                 self.vertices[v1i + 3 + k] = n[k]
                 self.vertices[v2i + 3 + k] = n[k]
                 self.vertices[v3i + 3 + k] = n[k]
+    '''
 
 
 class ObjFile:
@@ -50,6 +88,9 @@ class ObjFile:
             verts = f[0]
             norms = f[1]
             tcs = f[2]
+            
+            triangle_data = []
+            include = False
             for i in range(3):
                 # get normal components
                 n = (0.0, 0.0, 0.0)
@@ -62,15 +103,35 @@ class ObjFile:
                     t = self.texcoords[tcs[i] - 1]
 
                 # get vertex components
-                v = self.vertices[verts[i] - 1]
+                vertex_idx = verts[i] - 1
+                v = self.vertices[vertex_idx]
 
-                data = [v[0], v[1], v[2], n[0], n[1], n[2], t[0], t[1]]
-                mesh.vertices.extend(data)
+                vertex_data = [v[0], v[1], v[2], n[0], n[1], n[2], t[0], t[1]]
+                triangle_data.extend(vertex_data)
+                #mesh.vertices.extend(data)
+                
+                # TODO: If the verts is in (any) body measurement list, add
+                # 'data' list to extend the list of data for that body measurement.
+                # For this, you need to create another class property to store these
+                # information about each body measurement.
+                if vertex_idx in WAIST_INDICES: #and vertex_idx not in mesh.smpl_to_mesh_vertex_map:
+                    #mesh.smpl_to_mesh_vertex_map[vertex_idx] = int(len(mesh.vertices) / 8) - 1
+                    mesh.smpl_to_mesh_vertex_map[vertex_idx] = [x for x in range(len(mesh.vertices) - 8, len(mesh.vertices))]
+                    include = True
+
+            mesh.vertices.extend(triangle_data)
+            if include:
+                mesh.smpl_faces_data.extend(triangle_data)
 
             tri = [idx, idx + 1, idx + 2]
             mesh.indices.extend(tri)
             idx += 3
 
+        '''
+        material = self.mtl.get(self.obj_material)
+        if material:
+            mesh.set_materials(material)
+        '''
         self.objects[self._current_object] = mesh
         # mesh.calculate_normals()
         self.faces = []
@@ -83,13 +144,17 @@ class ObjFile:
         self.texcoords = []
         self.faces = []
 
-        self._current_object = None
+        self._current_object = 'smpl'
+        
+        self.obj_material = None
 
         material = None
         if mode == 'str':
             lines = resource.split('\n')
         else:
             lines = open(resource, 'r').readlines()
+        
+        lines.append('mtllib monkey.mtl')
 
         for line in lines:
             if line.startswith('#'):
@@ -102,9 +167,9 @@ class ObjFile:
             if values[0] == 'o':
                 self.finish_object()
                 self._current_object = values[1]
-            # elif values[0] == 'mtllib':
-            #    self.mtl = MTL(values[1])
-            # elif values[0] in ('usemtl', 'usemat'):
+            elif values[0] == 'mtllib':
+                self.mtl = MTL(values[1])
+            #elif values[0] in ('usemtl', 'usemat'):
             #    material = values[1]
             if values[0] == 'v':
                 v = list(map(float, values[1:4]))
@@ -125,6 +190,8 @@ class ObjFile:
                 for v in values[1:]:
                     w = v.split('/')
                     face.append(int(w[0]))
+                    if int(w[0]) > 6890:
+                        print('')
                     if len(w) >= 2 and len(w[1]) > 0:
                         texcoords.append(int(w[1]))
                     else:
@@ -140,7 +207,7 @@ class ObjFile:
 def MTL(filename):
     contents = {}
     mtl = None
-    return
+    #return
     for line in open(filename, "r"):
         if line.startswith('#'):
             continue
@@ -153,4 +220,10 @@ def MTL(filename):
             raise ValueError("mtl file doesn't start with newmtl stmt")
         mtl[values[0]] = values[1:]
     return contents
+
+    def __getitem__(self, key):
+        return self.contents[key]
+    
+    def get(self, key, default=None):
+        return self.contents.get(key, default)
 
