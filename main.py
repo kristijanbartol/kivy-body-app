@@ -12,7 +12,7 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
     Color, Translate, Rotate, Mesh, UpdateNormalMatrix, ChangeState
-from objloader import ObjFile
+from objloader import ObjFile, ALL_INDEX_SETS
 from functools import partial
 
 import re
@@ -93,8 +93,9 @@ class RenderScreen(Screen):
         self.rot.angle += delta * 100
         
     def update_mesh(self, *args):
-        self.mesh1.vertices = app.vertices
-        self.mesh3.vertices = app.faces_data
+        self.main_mesh.vertices = app.vertices
+        for mesh_idx in range(len(self.measurement_meshes)):
+            self.measurement_meshes[mesh_idx].vertices = app.faces_data[mesh_idx]
 
     def setup_scene(self):
         Color(1, 1, 1, 1)
@@ -111,16 +112,18 @@ class RenderScreen(Screen):
         
         texture = Image('bricks.png').texture
         
-        # NOTE: Indices should actually be of the expected size.
-        self.mesh3 = Mesh(
-             vertices=[],
-             indices=list(range(495)),
-             fmt=vertex_format,
-             mode='triangles',
-             texture=texture)
+        self.measurement_meshes = []
+        for _ in range(len(ALL_INDEX_SETS)):
+            # NOTE: Indices should actually be of the expected size.
+            self.measurement_meshes.append(Mesh(
+                vertices=[],
+                indices=list(range(495)),
+                fmt=vertex_format,
+                mode='triangles',
+                texture=texture))
         
         # NOTE: Indices should actually be of the expected size.
-        self.mesh1 = Mesh(
+        self.main_mesh = Mesh(
             vertices=[],
             indices=list(range(41328)),
             fmt=vertex_format,
@@ -251,13 +254,13 @@ class RenderButton(MDFillRoundFlatButton):
         m = list(scene.objects.values())[0]
         
         app.vertices = m.vertices
-        waist_mesh_indices_sublists = m.smpl_to_mesh_vertex_map.values()
+        #waist_mesh_indices_sublists = m.smpl_to_mesh_vertex_map.values()
         
-        waist_indices = []
-        for index_sublist in waist_mesh_indices_sublists:
-            waist_indices += index_sublist
+        #waist_indices = []
+        #for index_sublist in waist_mesh_indices_sublists:
+        #    waist_indices += index_sublist
         
-        app.waist_mesh_indices = waist_indices
+        #app.waist_mesh_indices = waist_indices
         app.faces_data = m.smpl_faces_data
                 
 
