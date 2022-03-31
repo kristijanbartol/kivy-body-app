@@ -12,7 +12,7 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import RenderContext, Callback, PushMatrix, PopMatrix, \
     Color, Translate, Rotate, Mesh, UpdateNormalMatrix, ChangeState
-from objloader import ObjFile, ALL_INDEX_SETS
+from objloader import ObjFile, ALL_INDEX_SETS, INDICES_LENS
 from functools import partial
 
 import re
@@ -100,8 +100,8 @@ class RenderScreen(Screen):
     def setup_scene(self):
         Color(1, 1, 1, 1)
         PushMatrix()
-        #Translate(0, 0, -3)
-        Translate(0, 0, -1.5)
+        Translate(0, 0, -2)
+        #Translate(0, 0, -1.5)
         self.rot = Rotate(1, 0, 1, 0)
         UpdateNormalMatrix()
         
@@ -113,11 +113,11 @@ class RenderScreen(Screen):
         texture = Image('bricks.png').texture
         
         self.measurement_meshes = []
-        for _ in range(len(ALL_INDEX_SETS)):
+        for set_idx in range(len(ALL_INDEX_SETS)):
             # NOTE: Indices should actually be of the expected size.
             self.measurement_meshes.append(Mesh(
                 vertices=[],
-                indices=list(range(495)),
+                indices=list(range(INDICES_LENS[set_idx])),
                 fmt=vertex_format,
                 mode='triangles',
                 texture=texture))
@@ -254,13 +254,6 @@ class RenderButton(MDFillRoundFlatButton):
         m = list(scene.objects.values())[0]
         
         app.vertices = m.vertices
-        #waist_mesh_indices_sublists = m.smpl_to_mesh_vertex_map.values()
-        
-        #waist_indices = []
-        #for index_sublist in waist_mesh_indices_sublists:
-        #    waist_indices += index_sublist
-        
-        #app.waist_mesh_indices = waist_indices
         app.faces_data = m.smpl_faces_data
                 
 

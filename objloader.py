@@ -66,6 +66,8 @@ ALL_INDEX_SETS = [
     HEAD_INDICES
 ]
 
+INDICES_LENS = [480, 447, 267, 456, 210, 180, 180, 192, 192, 216, 312, 408]
+
 
 class MeshData(object):
     def __init__(self, **kwargs):
