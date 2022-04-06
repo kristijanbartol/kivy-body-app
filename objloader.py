@@ -142,8 +142,6 @@ class ObjFile:
             lines = resource.split('\n')
         else:
             lines = open(resource, 'r').readlines()
-        
-        lines.append('mtllib monkey.mtl')
 
         for line in lines:
             if line.startswith('#'):
