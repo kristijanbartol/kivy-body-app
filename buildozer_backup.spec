@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = My Application
+title = BodyApp
 
 # (str) Package name
-package.name = myapp
+package.name = bodyapp
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -13,10 +13,10 @@ package.domain = org.test
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
+source.include_exts = py,png,jpg,kv,atlas,glsl,pkl,ttf
 
 # (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+source.include_patterns = assets/*,images/*.png,*.glsl,*.pkl,*.ttf
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -37,14 +37,16 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,setuptools
+requirements = kivy
+#requirements = python3,kivy,Pillow,numpy,certifi,trimesh
+#requirements = python3,sqlite3,openssl,kivy,numpy,torch,certifi,pyjnius
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
 
 # (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = %(source.dir)s/logo_transparent.png
 
 # (str) Icon of the application
 #icon.filename = %(source.dir)s/data/icon.png
@@ -93,16 +95,18 @@ fullscreen = 0
 #icon.adaptive_background.filename = %(source.dir)s/data/icon_bg.png
 
 # (list) Permissions
-#android.permissions = INTERNET
+android.permissions = INTERNET, READ_EXTERNAL_STORAGE
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
 #android.api = 27
+android.api = 29
 
-# (int) Minimum API your APK / AAB will support.
-#android.minapi = 21
+# (int) Minimum API your APK will support.
+android.minapi = 21
+#android.minapi = 27
 
 # (int) Android SDK version to use
 #android.sdk = 20
@@ -187,12 +191,17 @@ fullscreen = 0
 #android.add_assets =
 
 # (list) Gradle dependencies to add
-#android.gradle_dependencies =
+#android.gradle_dependencies = "org.pytorch:pytorch_android_lite:1.10.0"
+#,"org.pytorch:pytorch_android_torchvision:0.11.1"
 
 # (bool) Enable AndroidX support. Enable when 'android.gradle_dependencies'
 # contains an 'androidx' package, or any package from Kotlin source.
 # android.enable_androidx requires android.api >= 28
-#android.enable_androidx = False
+android.enable_androidx = True
+android.enable_jetifier = True
+
+android.useAndroidX=true
+android.enableJetifier=true
 
 # (list) add java compile options
 # this can for example be necessary when importing certain java libraries using the 'android.gradle_dependencies' option
@@ -260,9 +269,11 @@ fullscreen = 0
 # (bool) Copy library instead of making a libpymodules.so
 #android.copy_libs = 1
 
-# (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-# In past, was `android.arch` as we weren't supporting builds for multiple archs at the same time.
-android.archs = arm64-v8a, armeabi-v7a
+# (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
+android.arch = armeabi-v7a
+#android.arch = arm64-v8a
+#android.arch = x86_64
+#android.arch = x86
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
@@ -282,9 +293,6 @@ android.allow_backup = True
 
 # (bool) disables the compilation of py to pyc/pyo files when packaging
 # android.no-compile-pyo = True
-
-# (str) The format used to package the app for release mode (aab or apk).
-# android.release_artifact = aab
 
 #
 # Python for android (p4a) specific
@@ -312,7 +320,7 @@ android.allow_backup = True
 #p4a.hook =
 
 # (str) Bootstrap to use for android builds
-# p4a.bootstrap = sdl2
+p4a.bootstrap = sdl2
 
 # (int) port number to specify an explicit --port= p4a argument (eg for bootstrap flask)
 #p4a.port =
@@ -325,7 +333,9 @@ android.allow_backup = True
 #p4a.setup_py = false
 
 # (str) extra command line arguments to pass when invoking pythonforandroid.toolchain
-#p4a.extra_args =
+#p4a.extra_args = 
+#p4a.extra_args = aarch64-linux-android-gfortran
+
 
 
 #
@@ -385,7 +395,7 @@ warn_on_root = 1
 # (str) Path to build artifact storage, absolute or relative to spec file
 # build_dir = ./.buildozer
 
-# (str) Path to build output (i.e. .apk, .aab, .ipa) storage
+# (str) Path to build output (i.e. .apk, .ipa) storage
 # bin_dir = ./bin
 
 #    -----------------------------------------------------------------------------

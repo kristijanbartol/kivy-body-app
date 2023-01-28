@@ -1,3 +1,4 @@
+'''
 from kivymd.app import MDApp
 from kivy.clock import Clock
 from kivy.logger import Logger
@@ -339,3 +340,19 @@ class RendererApp(MDApp):
 if __name__ == "__main__":
     app = RendererApp()
     app.run()
+'''
+
+import kivy
+
+from kivy.app import App
+from kivy.uix.label import Label
+
+
+class MyApp(App):
+
+    def build(self):
+        return Label(text='Hello world')
+
+
+if __name__ == '__main__':
+    MyApp().run()
